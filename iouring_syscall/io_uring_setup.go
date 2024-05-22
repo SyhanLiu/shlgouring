@@ -187,6 +187,14 @@ const (
 	IORING_FEAT_SINGLE_MMAP uint32 = (1 << 0)
 
 	// IORING_FEAT_NODROP
+	/*
+	*	1.如果设置了这个flag，iouring支持几乎不丢弃完成事件。
+	*	2.丢弃事件只会发生在内核内存耗尽时，这种情况下会遇到比丢失时间更严重的问题。你的程序将会被OOM杀死。
+	*	3.如果发生了完成事件并且CQ环已满，内核将在内部存储该事件，直到CQ环有空间容纳更多条目。
+	*	4.在早期内核版本，如果发生了溢出，如果不能将溢出事件刷新到 CQ ring ，尝试提交更多的IO将会返回 -EBUSY 错误，如果发生这种情况应用程序必须收割CQ ring上的任务然后再次尝试提交。
+	*	5.如果内核没有内存去保存事件了，则可以通过增加CQ ring上的溢出值来显示该事件。
+	*	6.5.5后可用。此外 io_uring_enter(2)将返回-EBADR下一次，否则它将休眠等待 completions(自内核5.19)。
+	 */
 	IORING_FEAT_NODROP uint32 = (1 << 1)
 
 	// IORING_FEAT_SUBMIT_STABLE
@@ -197,12 +205,28 @@ const (
 	IORING_FEAT_SUBMIT_STABLE uint32 = (1 << 2)
 
 	// IORING_FEAT_RW_CUR_POS
+	/*
+	*	1.如果设置了这个flag，应用可以指定 offset == -1和IORING_OP_{READV,WRITEV}，IORING_OP_{READ,WRITE}_FIXED，IORING_OP_{READ,WRITE}，这意味着当前文件的位置。这和 preadv2，pwritev2 指定offset为-1行为类似。
+	*	2.它将使用（和更新）当前文件的位置。这显然伴随着一个警告，即如果应用程序在运行中有多个读或写操作，那么最终结果将不会像预期的那样。这类似于线程共享文件描述符并使用当前文件位置执行IO。
+	*	3.5.6后可用。
+	 */
 	IORING_FEAT_RW_CUR_POS uint32 = (1 << 3)
 
 	// IORING_FEAT_CUR_PERSONALITY
+	/*
+	*	If this flag is set, then io_uring guarantees that both sync and async execution of a request assumes  the  credentials
+	*	of  the task that called io_uring_enter(2) to queue the requests. If this flag isn't set, then requests are issued with
+	*	the credentials of the task that originally registered the io_uring. If only one task is using a ring, then  this  flag
+	*	doesn't matter as the credentials will always be the same. Note that this is the default behavior, tasks can still reg‐
+	*	ister different personalities through io_uring_register(2) with IORING_REGISTER_PERSONALITY and specify the personality
+	*	to use in the sqe. Available since kernel 5.6.
+	 */
 	IORING_FEAT_CUR_PERSONALITY uint32 = (1 << 4)
 
 	// IORING_FEAT_FAST_POLL
+	/*
+	*	1.如果设置了这个flag，io_uring支持使用内部轮询机制来驱动 data/space 准备情况。这意味着请求不能read和write
+	 */
 	IORING_FEAT_FAST_POLL uint32 = (1 << 5)
 
 	// IORING_FEAT_POLL_32BITS
@@ -210,6 +234,9 @@ const (
 
 	// IORING_FEAT_SQPOLL_NONFIXED
 	IORING_FEAT_SQPOLL_NONFIXED uint32 = (1 << 7)
+
+	// IORING_FEAT_ENTER_EXT_ARG
+	IORING_FEAT_ENTER_EXT_ARG uint32 = (1 << 8)
 )
 
 // IOURingSetup 实现 io_uring_setup(2)
